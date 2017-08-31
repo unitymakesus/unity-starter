@@ -116,4 +116,4 @@ WebFont.load({
 });
 ````
 
-Replace the string inside the families arg with the minimum font and weights your project requires. Use the format specified by Google Fonts: `Name:weight,weight|Name:weight,weight,weight`.
+Replace the string inside the families array with the minimum font and weights your project requires. Use the format specified by Google Fonts: `'Name:weight,weight', 'Name:weight,weight,weight'`.

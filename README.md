@@ -66,10 +66,6 @@ During theme installation you will have the options to:
 * Which framework would you like to load? **[0] None**
 * Do you want to install Font Awesome? **no**
 * Are you sure you want to overwrite the following files? (this just removes the framework-related SCSS files) **yes**
-* Update theme headers (theme name, description, author, etc.)
-* Select a CSS framework (Bootstrap, Foundation, Tachyons, none)
-* Add Font Awesome
-* Configure Browsersync (path to theme, local development URL)
 
 From the command line on your host machine (not on your Vagrant box), navigate to the theme directory then run `yarn`:
 

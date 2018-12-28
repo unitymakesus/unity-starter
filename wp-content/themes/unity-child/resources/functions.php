@@ -90,3 +90,8 @@ Container::getInstance()
             'view' => require dirname(__DIR__).'/config/view.php',
         ]);
     }, true);
+
+/**
+ * Manually include parent theme's functions.php file
+ */
+require_once( get_stylesheet_directory() . '/functions.php' );

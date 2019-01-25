@@ -38,6 +38,10 @@ body {
   justify-content: flex-end;
 }
 
+.flex-grow {
+  flex: 1;
+}
+
 .flex-bottom {
   align-items: flex-end;
 }

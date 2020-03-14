@@ -1,4 +1,4 @@
-<footer class="content-info page-footer" role="contentinfo" style="background-color: {{ $footer_color }}">
+<footer class="content-info page-footer" role="contentinfo">
   <div class="footer-content row flex space-between align-center">
     <div class="footer-left col m4 s12">
       @php dynamic_sidebar('footer-left') @endphp

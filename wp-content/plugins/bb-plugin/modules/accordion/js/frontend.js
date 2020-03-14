@@ -51,8 +51,8 @@
 				if( allIcons.find('svg').length > 0 ) {
 					allIcons.find('svg').attr("data-icon",'plus');
 				} else {
-					allIcons.removeClass('fa-minus');
-					allIcons.addClass('fa-plus');
+					allIcons.removeClass( this.settings.activeIcon );
+					allIcons.addClass( this.settings.labelIcon );
 				}
 			}
 
@@ -65,9 +65,11 @@
 				if( icon.find('svg').length > 0 ) {
 					icon.find('svg').attr("data-icon",'minus');
 				} else {
-					icon.addClass('fa-minus');
-					icon.removeClass('fa-plus');
+					icon.removeClass( this.settings.labelIcon );
+					icon.addClass( this.settings.activeIcon );
 				}
+
+				icon.find('span').text( 'Collapse' );
 			}
 			else {
 				button.attr('aria-expanded', 'false');
@@ -78,9 +80,11 @@
 				if( icon.find('svg').length > 0 ) {
 					icon.find('svg').attr("data-icon",'plus');
 				} else {
-					icon.addClass('fa-plus');
-					icon.removeClass('fa-minus');
+					icon.removeClass( this.settings.activeIcon );
+					icon.addClass( this.settings.labelIcon );
 				}
+
+				icon.find('span').text( 'Expand' );
 			}
 		},
 
@@ -123,6 +127,12 @@
 
 			// WP audio shortcode support
 			FLBuilderLayout.resizeAudio( content );
+
+			// Reload Google Map embed.
+			FLBuilderLayout.reloadGoogleMap( content );
+
+			// Slideshow module support.
+			FLBuilderLayout.resizeSlideshow();
 
 			if ( item.offset().top < win.scrollTop() + 100 ) {
 				$( 'html, body' ).animate({

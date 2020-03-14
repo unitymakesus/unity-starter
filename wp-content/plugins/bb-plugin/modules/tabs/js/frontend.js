@@ -69,6 +69,11 @@
 
 			// Slideshow module support.
 			FLBuilderLayout.resizeSlideshow();
+
+			// Reload Google Map embed.
+			FLBuilderLayout.reloadGoogleMap( wrap.find('.fl-tabs-panel-content[data-index="' + index + '"]') );
+
+			e.preventDefault();
 		},
 
 		_responsiveLabelClick: function(e)
@@ -123,6 +128,9 @@
 
 				// WP audio shortcode support
 				FLBuilderLayout.resizeAudio( content );
+
+				// Reload Google Map embed.
+				FLBuilderLayout.reloadGoogleMap( wrap.find('.fl-tabs-panel-content[data-index="' + index + '"]') );
 
 				if(label.offset().top < $(window).scrollTop() + 100) {
 					$('html, body').animate({ scrollTop: label.offset().top - 100 }, 500, 'swing');

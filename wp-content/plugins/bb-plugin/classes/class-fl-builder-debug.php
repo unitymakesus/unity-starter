@@ -5,14 +5,16 @@ final class FL_Debug {
 	static private $tests = array();
 
 	public static function init() {
-		if ( isset( $_GET['fldebug'] ) && get_option( 'fl_debug_mode', false ) === $_GET['fldebug'] ) {
+		if ( isset( $_GET['fldebug'] ) && get_transient( 'fl_debug_mode', false ) === $_GET['fldebug'] ) {
 			add_action( 'init', array( 'FL_Debug', 'display_tests' ) );
 		}
 
-		if ( get_option( 'fl_debug_mode', false ) ) {
+		if ( get_transient( 'fl_debug_mode' ) ) {
 			self::enable_logging();
+			add_filter( 'fl_is_debug', '__return_true' );
 		}
 	}
+
 
 	public static function enable_logging() {
 		@ini_set( 'display_errors', 1 ); // @codingStandardsIgnoreLine
@@ -45,7 +47,7 @@ final class FL_Debug {
 	}
 
 	private static function formatbytes( $size, $precision = 2 ) {
-		$base = log( $size, 1024 );
+		$base     = log( $size, 1024 );
 		$suffixes = array( '', 'K', 'M', 'G', 'T' );
 
 		return round( pow( 1024, $base - floor( $base ) ), $precision ) . $suffixes[ floor( $base ) ];
@@ -71,7 +73,7 @@ final class FL_Debug {
 
 	private static function get_mu_plugins() {
 		$plugins_data = get_mu_plugins();
-		$plugins = array();
+		$plugins      = array();
 
 		foreach ( $plugins_data as $plugin_path => $plugin ) {
 			$plugins[] = sprintf( '%s version %s by %s', $plugin['Name'], $plugin['Version'], $plugin['Author'] );
@@ -79,7 +81,7 @@ final class FL_Debug {
 		return $plugins;
 	}
 
-	private static function safe_ini_get( $ini ) {
+	public static function safe_ini_get( $ini ) {
 		return @ini_get( $ini ); // @codingStandardsIgnoreLine
 	}
 
@@ -87,9 +89,10 @@ final class FL_Debug {
 		return '----------------------------------------------';
 	}
 
+
 	private static function prepare_tests() {
 
-		global $wpdb, $wp_version;
+		global $wpdb, $wp_version, $wp_json;
 
 		$args = array(
 			'name' => 'WordPress',
@@ -128,6 +131,12 @@ final class FL_Debug {
 		self::register( 'fl_debug', $args );
 
 		$args = array(
+			'name' => 'FL Modsec Fix',
+			'data' => defined( 'FL_BUILDER_MODSEC_FIX' ) && FL_BUILDER_MODSEC_FIX ? 'Yes' : 'No',
+		);
+		self::register( 'fl_modsec', $args );
+
+		$args = array(
 			'name' => 'SSL Enabled',
 			'data' => is_ssl() ? 'Yes' : 'No',
 		);
@@ -151,6 +160,39 @@ final class FL_Debug {
 		);
 		self::register( 'wp_max_mem', $args );
 
+		if ( get_option( 'upload_path' ) != 'wp-content/uploads' && get_option( 'upload_path' ) ) {
+			$args = array(
+				'name' => 'Possible Issue: upload_path is set, can lead to cache dir issues and css not loading. Check Settings -> Media for custom path.',
+				'data' => get_option( 'upload_path' ),
+			);
+			self::register( 'wp_media_upload_path', $args );
+		}
+
+		$args = array(
+			'name' => 'Post Counts',
+			'data' => self::divider(),
+		);
+		self::register( 'post_counts', $args );
+
+		$templates = wp_count_posts( 'fl-builder-template' );
+
+		$post_types = get_post_types( null, 'object' );
+
+		foreach ( $post_types as $type => $type_object ) {
+
+			if ( in_array( $type, array( 'wp_block', 'user_request', 'oembed_cache', 'customize_changeset', 'custom_css', 'nav_menu_item' ) ) ) {
+				continue;
+			}
+
+			$count = wp_count_posts( $type );
+
+			$args = array(
+				'name' => ( 'fl-builder-template' == $type ) ? 'Builder Templates' : 'WordPress ' . $type_object->label,
+				'data' => ( $count->inherit > 0 ) ? $count->inherit : $count->publish,
+			);
+			self::register( 'wp_type_count_' . $type, $args );
+		}
+
 		$args = array(
 			'name' => 'Themes',
 			'data' => self::divider(),
@@ -158,7 +200,7 @@ final class FL_Debug {
 		self::register( 'themes', $args );
 
 		$theme = wp_get_theme();
-		$args = array(
+		$args  = array(
 			'name' => 'Active Theme',
 			'data' => array(
 				sprintf( '%s - v%s', $theme->get( 'Name' ), $theme->get( 'Version' ) ),
@@ -166,6 +208,27 @@ final class FL_Debug {
 			),
 		);
 		self::register( 'active_theme', $args );
+
+		if ( 'bb-theme' === $theme->get( 'Template' ) ) {
+			if ( is_dir( trailingslashit( get_stylesheet_directory() ) . 'includes' ) ) {
+				$args = array(
+					'name' => 'Child Theme includes folder detected.',
+					'data' => trailingslashit( get_stylesheet_directory() ) . 'includes/',
+				);
+				self::register( 'child_includes', $args );
+			}
+
+			if ( is_dir( trailingslashit( get_stylesheet_directory() ) . 'fl-builder/modules' ) ) {
+				$modules = glob( trailingslashit( get_stylesheet_directory() ) . 'fl-builder/modules/*' );
+				if ( ! empty( $modules ) ) {
+					$args = array(
+						'name' => 'Child Theme builder modules folder detected.',
+						'data' => implode( '<br>', $modules ),
+					);
+					self::register( 'child_bb_modules', $args );
+				}
+			}
+		}
 
 		$args = array(
 			'name' => 'Plugins',
@@ -180,12 +243,12 @@ final class FL_Debug {
 		self::register( 'wp_plugins', $args );
 
 		$defaults = array(
-			'active' => array(),
+			'active'   => array(),
 			'deactive' => array(),
 		);
 
 		$plugins = wp_parse_args( self::get_plugins(), $defaults );
-		$args = array(
+		$args    = array(
 			'name' => 'Active Plugins',
 			'data' => $plugins['active'],
 		);
@@ -214,6 +277,12 @@ final class FL_Debug {
 			'data' => php_sapi_name(),
 		);
 		self::register( 'php_sapi', $args );
+
+		$args = array(
+			'name' => 'PHP JSON Support',
+			'data' => ( $wp_json instanceof Services_JSON ) ? '*** NO JSON MODULE ***' : 'yes',
+		);
+		self::register( 'php_json', $args );
 
 		$args = array(
 			'name' => 'PHP Memory Limit',
@@ -270,6 +339,26 @@ final class FL_Debug {
 		);
 		self::register( 'recursion', $args );
 
+		$zlib = self::safe_ini_get( 'zlib.output_compression' );
+
+		if ( $zlib ) {
+			$args = array(
+				'name' => 'ZLIB Output Compression',
+				'data' => $zlib,
+			);
+			self::register( 'zlib', $args );
+		}
+
+		$zlib_handler = self::safe_ini_get( 'zlib.output_handler' );
+
+		if ( $zlib_handler ) {
+			$args = array(
+				'name' => 'ZLIB Handler',
+				'data' => $zlib,
+			);
+			self::register( 'zlib_handler', $zlib_handler );
+		}
+
 		$args = array(
 			'name' => 'BB Products',
 			'data' => self::divider(),
@@ -303,7 +392,7 @@ final class FL_Debug {
 		$cache = FLBuilderModel::get_cache_dir();
 
 		$args = array(
-			'name' => 'Beaver Builder Path',
+			'name' => 'Beaver Builder Cache Path',
 			'data' => $cache['path'],
 		);
 		self::register( 'bb_cache_path', $args );
@@ -318,7 +407,7 @@ final class FL_Debug {
 			$cache = FLCustomizer::get_cache_dir();
 
 			$args = array(
-				'name' => 'Beaver Theme Path',
+				'name' => 'Beaver Theme Cache Path',
 				'data' => $cache['path'],
 			);
 			self::register( 'bb_theme_cache_path', $args );
@@ -329,6 +418,12 @@ final class FL_Debug {
 			);
 			self::register( 'bb_theme_cache_path_writable', $args );
 		}
+
+		$args = array(
+			'name' => 'WordPress Content Path',
+			'data' => WP_CONTENT_DIR,
+		);
+		self::register( 'bb_content_path', $args );
 
 		$args = array(
 			'name' => 'License',
@@ -345,9 +440,9 @@ final class FL_Debug {
 
 		} elseif ( class_exists( 'FLUpdater' ) ) {
 			$subscription = FLUpdater::get_subscription_info();
-			$args = array(
+			$args         = array(
 				'name' => 'Beaver Builder License',
-				'data' => ( $subscription->active ) ? 'Active' : 'Not Active',
+				'data' => ( isset( $subscription->active ) ) ? 'Active' : 'Not Active',
 			);
 			self::register( 'bb_sub', $args );
 
@@ -366,6 +461,13 @@ final class FL_Debug {
 				);
 				self::register( 'bb_sub_domain', $args );
 			}
+			if ( isset( $subscription->downloads ) && is_array( $subscription->downloads ) && ! empty( $subscription->downloads ) ) {
+				$args = array(
+					'name' => 'Available Downloads',
+					'data' => implode( "\n", $subscription->downloads ),
+				);
+				self::register( 'av_downloads', $args );
+			}
 		}
 
 		$args = array(
@@ -380,6 +482,33 @@ final class FL_Debug {
 		);
 		self::register( 'mysql_version', $args );
 
+		$results = (array) $wpdb->get_results( 'SHOW VARIABLES' );
+
+		foreach ( $results as $k => $result ) {
+			if ( 'max_allowed_packet' === $result->Variable_name ) { // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				$args = array(
+					'name' => 'MySQL Max Allowed Packet',
+					'data' => number_format( $result->Value / 1048576 ) . 'MB', // phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase
+				);
+				self::register( 'mysql_packet', $args );
+			}
+		}
+
+		$db_bytes = $wpdb->get_var(
+			$wpdb->prepare(
+				'SELECT SUM(data_length + index_length) FROM information_schema.TABLES where table_schema = %s GROUP BY table_schema;',
+				DB_NAME
+			)
+		);
+
+		if ( is_numeric( $db_bytes ) ) {
+			$args = array(
+				'name' => 'MySQL Database Size',
+				'data' => number_format( $db_bytes / 1048576 ) . 'MB',
+			);
+			self::register( 'mysql_size', $args );
+		}
+
 		$args = array(
 			'name' => 'Server Info',
 			'data' => $_SERVER['SERVER_SOFTWARE'],
@@ -393,7 +522,7 @@ final class FL_Debug {
 		self::register( 'up_htaccess', $args );
 
 		// detect uploads folder .htaccess file and display it if found.
-		$uploads = wp_upload_dir( null, false );
+		$uploads          = wp_upload_dir( null, false );
 		$uploads_htaccess = trailingslashit( $uploads['basedir'] ) . '.htaccess';
 		$root_htaccess    = trailingslashit( ABSPATH ) . '.htaccess';
 
@@ -401,7 +530,7 @@ final class FL_Debug {
 			ob_start();
 			readfile( $root_htaccess );
 			$htaccess = ob_get_clean();
-			$args = array(
+			$args     = array(
 				'name' => $root_htaccess . "\n",
 				'data' => $htaccess,
 			);
@@ -411,7 +540,7 @@ final class FL_Debug {
 			ob_start();
 			readfile( $uploads_htaccess );
 			$htaccess = ob_get_clean();
-			$args = array(
+			$args     = array(
 				'name' => $uploads_htaccess . "\n",
 				'data' => $htaccess,
 			);

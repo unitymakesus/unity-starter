@@ -1,19 +1,31 @@
 (function($){
+	$.validator.addMethod( "alphanumeric", function( value, element ) {
+		return this.optional( element ) || /^\w+$/i.test( value );
+	}, "Letters, numbers, and underscores only please" );
 
 	FLBuilder.registerModuleHelper('contact-form', {
 
+		rules: {
+			recaptcha_action: {
+				alphanumeric: true
+			}
+		},
+
 		init: function()
 		{
-			// Button background color change
-			$( 'input[name=btn_bg_color]' ).on( 'change', this._bgColorChange );
-			this._bgColorChange();
-
+			var form = $( '.fl-builder-settings' ),
+			icon = form.find( 'input[name=btn_icon]' );
+			icon.on( 'change', this._flipSettings );
+			this._flipSettings();
 			// Toggle reCAPTCHA display
 			this._toggleReCaptcha();
+			this._toggleAction();
 			$( 'select[name=recaptcha_toggle]' ).on( 'change', $.proxy( this._toggleReCaptcha, this ) );
+			$( 'select[name=recaptcha_toggle]' ).on( 'change', $.proxy( this._toggleAction, this ) );
 			$( 'input[name=recaptcha_site_key]' ).on( 'change', $.proxy( this._toggleReCaptcha, this ) );
 			$( 'select[name=recaptcha_validate_type]' ).on( 'change', $.proxy( this._toggleReCaptcha, this ) );
 			$( 'select[name=recaptcha_theme]' ).on( 'change', $.proxy( this._toggleReCaptcha, this ) );
+			$( 'input[name=btn_bg_color]' ).on( 'change', this._previewButtonBackground );
 
 			// Render reCAPTCHA after layout rendered via AJAX
 			if ( window.onLoadFLReCaptcha ) {
@@ -21,17 +33,15 @@
 			}
 		},
 
-		_bgColorChange: function()
-		{
-			var bgColor = $( 'input[name=btn_bg_color]' ),
-				style   = $( '#fl-builder-settings-section-btn_style' );
-
-
-			if ( '' == bgColor.val() ) {
-				style.hide();
-			}
-			else {
-				style.show();
+		_flipSettings: function() {
+			var form  = $( '.fl-builder-settings' ),
+					icon = form.find( 'input[name=btn_icon]' );
+			if ( -1 !== icon.val().indexOf( 'fad fa') ) {
+				$('#fl-field-btn_duo_color1').show();
+				$('#fl-field-btn_duo_color2').show();
+			} else {
+				$('#fl-field-btn_duo_color1').hide();
+				$('#fl-field-btn_duo_color2').hide();
 			}
 		},
 
@@ -114,6 +124,10 @@
 				captchaElement 	= $( '<div id="'+ reCaptchaId +'" class="fl-grecaptcha">' ),
 				widgetID;
 
+			if ( 'invisible_v3' == reCaptType ) {
+				reCaptType = 'invisible';
+			}
+
 			captchaElement.attr( 'data-sitekey', reCaptchaKey );
 			captchaElement.attr( 'data-validate', reCaptType );
 			captchaElement.attr( 'data-theme', theme );
@@ -129,7 +143,40 @@
 				theme	: theme
 			});
 			captchaElement.attr('data-widgetid', widgetID);
-		}
+		},
+
+		_toggleAction: function()
+		{
+			var form   = $( '.fl-builder-settings' ),
+				toggle = form.find( 'select[name=recaptcha_toggle]' ).val(),
+				captType = form.find( 'select[name=recaptcha_validate_type]' ).val(),
+				action = form.find('input[name=recaptcha_action]');
+
+				if ( 'show' == toggle && 'invisible_v3' == captType ) {
+					action.closest( 'tr' ).show();
+				}
+				else {
+					action.closest( 'tr' ).hide();
+				}
+		},
+
+		_previewButtonBackground: function( e ) {
+			var preview	= FLBuilder.preview,
+				selector = preview.classes.node + ' a.fl-button, ' + preview.classes.node + ' a.fl-button:visited',
+				form = $( '.fl-builder-settings:visible' ),
+				style = form.find( 'select[name=btn_style]' ).val(),
+				bgColor = form.find( 'input[name=btn_bg_color]' ).val();
+
+			if ( 'flat' === style ) {
+				if ( '' !== bgColor && bgColor.indexOf( 'rgb' ) < 0 ) {
+					bgColor = '#' + bgColor;
+				}
+				preview.updateCSSRule( selector, 'background-color', bgColor );
+				preview.updateCSSRule( selector, 'border-color', bgColor );
+			} else {
+				preview.delayPreview( e );
+			}
+		},
 
 	});
 

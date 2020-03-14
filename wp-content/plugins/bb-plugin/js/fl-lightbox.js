@@ -689,7 +689,6 @@
 		{
 			var lightbox = this._node.find( '.fl-lightbox' ),
 				settings = this._getPositionSettings();
-
 			if ( settings ) {
 				lightbox.css( settings );
 			} else {
@@ -720,12 +719,26 @@
 			if ( ! settings ) {
 				return false;
 			}
+			var winHeight = window.innerHeight,
+				height = parseInt( settings.height ),
+				top    = parseInt( settings.top ),
+				wleft  = parseInt( settings.left ),
+				wtop   = parseInt( settings.top ),
+				width  = parseInt( settings.width );
 
-			var winHeight = $( window ).height(),
-				height = parseInt( settings.height );
+			// settings are off the screen to the right
+			if( (wleft + width + 100) > screen.width ) {
+				settings.left = screen.width - width - 250;
+			}
 
-			if ( height > winHeight && winHeight > 546 ) {
-				settings.height = winHeight - 50;
+			// settings are off the screen to the left
+			if ( wleft < 0 ) {
+				settings.left = 50;
+			}
+			if ( ( height > winHeight && winHeight > 546 ) || top + height > winHeight ) {
+				if ( height > winHeight ) {
+					settings.height = winHeight - 50;
+				}
 				settings.top = 0;
 			}
 

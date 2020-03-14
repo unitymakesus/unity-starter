@@ -9,6 +9,12 @@
 	 */
 	var PinnedUI = {
 
+		minWidth: 320,
+
+		maxWidth: 600,
+
+		minHeight: 400,
+
 		/**
 		 * @since 2.0
 		 * @method init
@@ -107,7 +113,7 @@
 
 			if ( panel.hasClass( 'fl-builder-ui-pinned-hidden' ) ) {
 				return;
-			} else if ( window.innerWidth <= 500 ) {
+			} else if ( window.innerWidth <= this.maxWidth ) {
 				if ( pinned ) {
 					this.unpin( false );
 				}
@@ -225,9 +231,9 @@
 				start		: this.dragStart.bind( this ),
 			} ).resizable( {
 				handles		: 'e, w',
-				minHeight	: 400,
-				minWidth	: 380,
-				maxWidth	: 500,
+				minHeight	: this.minHeight,
+				minWidth	: this.minWidth,
+				maxWidth	: this.maxWidth,
 				start		: this.resizeStart.bind( this ),
 				stop		: this.resizeStop.bind( this )
 			} );
@@ -470,7 +476,9 @@
 				panel 	  = $( '.fl-builder--content-library-panel' ),
 				width     = panel.outerWidth();
 
-			if ( panel.hasClass( 'fl-builder-ui-pinned-left' ) ) {
+			if ( ! panel.is( ':visible' ) ) {
+				body.css( 'margin', '' );
+			} else if ( panel.hasClass( 'fl-builder-ui-pinned-left' ) ) {
 				body.css( 'margin-left', width + 'px' );
 				preview.css( 'margin-left', width + 'px' );
 			} else if ( panel.hasClass( 'fl-builder-ui-pinned-right' ) ) {

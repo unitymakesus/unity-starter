@@ -9,7 +9,7 @@ if ( '' == $settings->heading && 'compact' == $settings->layout ) {
 ?>
 <div class="<?php echo $testimonials_class; ?>">
 
-	<?php if ( 'wide' != $settings->layout ) : ?>
+	<?php if ( ( 'wide' != $settings->layout ) && ! empty( $settings->heading ) ) : ?>
 		<h3 class="fl-testimonials-heading"><?php echo $settings->heading; ?></h3>
 	<?php endif; ?>
 
@@ -24,14 +24,14 @@ if ( '' == $settings->heading && 'compact' == $settings->layout ) {
 
 			$testimonials = $settings->testimonials[ $i ];
 
-		?>
+			?>
 		<div class="fl-testimonial">
 			<?php echo $testimonials->testimonial; ?>
 		</div>
 		<?php endfor; ?>
 	</div>
 
-	<div class="fl-slider-next"></div>
-	<div class="fl-slider-prev"></div>
+	<div class="fl-slider-next" role="button" aria-pressed="false"></div>
+	<div class="fl-slider-prev" role="button" aria-pressed="false"></div>
 
 </div>

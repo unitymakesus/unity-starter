@@ -71,12 +71,14 @@
 					title     : '',
 					badges	  : [],
 					tabs      : [],
+					activeTab : null,
 					buttons	  : [],
 					settings  : {},
 					legacy    : null,
-					rules	  : null,
+					rules	    : null,
 					preview   : null,
-					helper 	  : null
+					helper 	  : null,
+					messages  : null
 				};
 
 			// Load settings from the server if we have a node but no settings.
@@ -131,7 +133,7 @@
 				action 	 : 'get_node_settings',
 				node_id  : config.nodeId,
 			}, function( response ) {
-				config.settings = JSON.parse( response );
+				config.settings = FLBuilder._jsonParse( response );
 				FLBuilderSettingsConfig.nodes[ config.nodeId ] = config.settings;
 				FLBuilderSettingsForms.render( config, callback );
 				FLBuilder.hideAjaxLoader();
@@ -147,14 +149,33 @@
 		 * @return {Boolean}
 		 */
 		renderLightbox: function( config ) {
-			var template = wp.template( 'fl-builder-settings' ),
-				form	 = FLBuilder._lightbox._node.find( 'form.fl-builder-settings' ),
-				nested   = $( '.fl-lightbox-wrap[data-parent]' );
+			var template 	= wp.template( 'fl-builder-settings' ),
+				form	 	= FLBuilder._lightbox._node.find( 'form.fl-builder-settings' ),
+				nested   	= $( '.fl-lightbox-wrap[data-parent]' ),
+				cachedTabId = localStorage.getItem( 'fl-builder-settings-tab' );
 
 			// Don't render a node form if it's already open.
 			if ( config.nodeId && config.nodeId === form.data( 'node' ) && ! config.lightbox ) {
 				FLBuilder._focusFirstSettingsControl();
 				return false;
+			}
+
+			if ( config.hide ) {
+				return true;
+			}
+
+			// Set the active tab from local storage.
+			if ( cachedTabId ) {
+				for ( var tabId in config.tabs ) {
+					if ( tabId === cachedTabId.replace( 'fl-builder-settings-tab-', '' ) ) {
+						config.activeTab = tabId;
+					}
+				}
+			}
+
+			// Make sure we have an active tab.
+			if ( ! config.activeTab ) {
+				config.activeTab = Object.keys( config.tabs ).shift();
 			}
 
 			// Render the lightbox and form.
@@ -171,8 +192,7 @@
 				}
 
 				FLBuilder._closePanel();
-				FLBuilder._showLightbox();
-				FLBuilder._setLightboxContent( template( config ) );
+				FLBuilder._showLightbox( template( config ) );
 			} else {
 				config.lightbox.setContent( template( config ) );
 			}
@@ -203,7 +223,7 @@
 				FLBuilder._initSettingsForms();
 
 				if ( config.rules ) {
-					FLBuilder._initSettingsValidation( config.rules );
+					FLBuilder._initSettingsValidation( config.rules, config.messages );
 				}
 				if ( config.preview ) {
 					FLBuilder.preview = new FLBuilderPreview( config.preview );
@@ -237,7 +257,7 @@
 				value 			 = null,
 				isMultiple       = false,
 				responsive		 = null,
-				responsiveFields = [ 'dimension', 'unit' ],
+				responsiveFields = [ 'align', 'border', 'dimension', 'unit', 'photo', 'select', 'typography' ],
 				settings		 = ! settings ? this.config.settings : settings,
 				globalSettings   = FLBuilderConfig.global;
 
@@ -247,6 +267,11 @@
 				isMultiple 		 	= field.multiple ? true : false;
 				supportsResponsive 	= $.inArray( field['type'], responsiveFields ) > -1,
 				value 			 	= ! _.isUndefined( settings[ name ] ) ? settings[ name ] : '';
+
+				// Make sure this field has a type, if not the sky falls.
+				if ( ! field.type ) {
+					continue;
+				}
 
 				// Use a default value if not set in the settings.
 				if ( _.isUndefined( settings[ name ] ) && field['default'] ) {
@@ -413,7 +438,7 @@
 		 * @param {String} response
 		 */
 		renderLegacySettingsComplete: function( response ) {
-			var data 	 = 'object' === typeof response ? response : JSON.parse( response ),
+			var data 	 = 'object' === typeof response ? response : FLBuilder._jsonParse( response ),
 				lightbox = null,
 				form  	 = null,
 				name 	 = '',
@@ -499,6 +524,7 @@
 				this.settings = FLBuilder._getSettingsForChangedCheck( this.config.nodeId, form );
 
 				if ( FLBuilder.preview ) {
+					this.settings = $.extend( this.settings, FLBuilder.preview._savedSettings );
 					FLBuilder.preview._savedSettings = this.settings;
 				}
 			}
@@ -565,9 +591,8 @@
 		 * @since 2.0
 		 * @method closeOnDeleteNode
 		 * @param {Object} e
-		 * @param {String} nodeId
 		 */
-		closeOnDeleteNode: function( e, nodeId )
+		closeOnDeleteNode: function( e )
 		{
 			var settings = $( '.fl-builder-settings[data-node]' ),
 				selector = FLBuilder._contentClass + ' .fl-node-' + settings.data( 'node' );
@@ -644,8 +669,9 @@
 			// Save settings
 			FLBuilder.addHook( 'didSaveNodeSettings', this.updateOnNodeEvent.bind( this ) );
 			FLBuilder.addHook( 'didSaveNodeSettingsComplete', this.updateOnNodeEvent.bind( this ) );
-			FLBuilder.addHook( 'didSaveGlobalSettingsComplete', this.updateOnSaveGlobalSettings.bind( this ) );
 			FLBuilder.addHook( 'didSaveLayoutSettingsComplete', this.updateOnSaveLayoutSettings.bind( this ) );
+			FLBuilder.addHook( 'didSaveGlobalSettingsComplete', this.updateOnSaveGlobalSettings.bind( this ) );
+			FLBuilder.addHook( 'didSaveGlobalSettingsComplete', this.reload );
 
 			// Add nodes
 			FLBuilder.addHook( 'didAddRow', this.updateOnNodeEvent.bind( this ) );
@@ -676,7 +702,23 @@
 			FLBuilder.addHook( 'didApplyRowTemplateComplete', this.updateOnApplyTemplate.bind( this ) );
 			FLBuilder.addHook( 'didApplyColTemplateComplete', this.updateOnApplyTemplate.bind( this ) );
 			FLBuilder.addHook( 'didSaveGlobalNodeTemplate', this.updateOnApplyTemplate.bind( this ) );
+
+			// Revisions and history
 			FLBuilder.addHook( 'didRestoreRevisionComplete', this.updateOnApplyTemplate.bind( this ) );
+			FLBuilder.addHook( 'didRestoreHistoryComplete', this.updateOnHistoryRestored.bind( this ) );
+		},
+
+		/**
+		 * Reloads the core settings config from the server.
+		 *
+		 * @since 2.2.2
+		 * @method reload
+		 */
+		reload: function() {
+			var url = FLBuilderConfig.editUrl + '&fl_builder_load_settings_config=core';
+
+			$( 'script[src*="fl_builder_load_settings_config=core"]' ).remove();
+			$( 'head' ).append( '<script src="' + url + '"></script>' );
 		},
 
 		/**
@@ -689,6 +731,7 @@
 		 */
 		updateOnSaveGlobalSettings: function( e, settings ) {
 			this.settings.global = settings;
+			FLBuilderConfig.global = settings;
 		},
 
 		/**
@@ -714,11 +757,11 @@
 			var event = arguments[0];
 
 			if ( event.namespace.indexOf( 'didAdd' ) > -1 ) {
-				this.addNode( arguments[1] );
+				this.addNode( 'object' === typeof arguments[1] ? arguments[1].nodeId : arguments[1] );
 			} else if ( event.namespace.indexOf( 'didSaveNodeSettings' ) > -1 ) {
 				this.updateNode( arguments[1].nodeId, arguments[1].settings );
 			} else if ( event.namespace.indexOf( 'didDelete' ) > -1 ) {
-				this.deleteNodes();
+				this.deleteNodes( 'object' === typeof arguments[1] ? arguments[1].nodeId : arguments[1] );
 			} else if ( event.namespace.indexOf( 'didDuplicate' ) > -1 ) {
 				this.duplicateNode( arguments[1].oldNodeId, arguments[1].newNodeId );
 			}
@@ -793,6 +836,22 @@
 		updateOnApplyTemplate: function( e, config ) {
 			this.nodes = config.nodes;
 			this.attachments = config.attachments;
+		},
+
+		/**
+		 * Updates the node config when a history state is rendered.
+		 *
+		 * @since 2.0
+		 * @method updateOnHistoryRestored
+		 * @param {Object} e
+		 * @param {Object} data
+		 */
+		updateOnHistoryRestored: function( e, data ) {
+			this.nodes = data.config.nodes
+			this.attachments = data.config.attachments
+			this.settings.layout = data.settings.layout
+			this.settings.global = data.settings.global
+			FLBuilderConfig.global = data.settings.global
 		},
 
 		/**

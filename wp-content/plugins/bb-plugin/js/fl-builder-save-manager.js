@@ -120,6 +120,7 @@
 			if ( 'save_lightbox_position' == action ) return false;
             if ( 'save_pinned_ui_position' == action ) return false;
             if ( 'fl_builder_notifications' == action ) return false;
+            if ( action.indexOf( 'history' ) > -1 ) return false; // HistoryManager
 
             return true;
         },
@@ -160,7 +161,7 @@
          */
         showStatusMessage: function(message, toolTip) {
             this.$savingIndicator.html(message);
-            if (!_.isUndefined(toolTip)) {
+            if (! FLBuilder.isUndefined(toolTip)) {
                 this.$savingIndicator.attr('title', toolTip);
                 $('.fl-builder--saving-indicator').tipTip({
 					defaultPosition: 'bottom',
@@ -191,6 +192,7 @@
          * @return void
          */
         onPublishAndRemain: function() {
+			FLBuilder.MainMenu.hide();
             if (this.layoutNeedsPublish) {
                 FLBuilder._publishLayout(false);
             } else {

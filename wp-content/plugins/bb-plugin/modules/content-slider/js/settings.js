@@ -1,24 +1,48 @@
 (function($){
 
+	FLBuilder.registerModuleHelper('content-slider', {
+
+		submit: function() {
+			var form   = $('.fl-builder-settings'),
+			transition = parseInt( form.find('input[name=speed]').val() ),
+			delay      = parseInt( form.find('input[name=delay]').val() )
+
+			if ( transition > delay ) {
+				FLBuilder.alert( FLBuilderStrings.contentSliderTransitionWarn )
+				return false;
+			}
+			return true;
+		}
+	})
+
 	FLBuilder.registerModuleHelper('content_slider_slide', {
 
 		init: function()
 		{
-			var form          = $('.fl-form-field-settings'),
+			var form        = $('.fl-form-field-settings'),
 				bgLayout      = form.find('select[name=bg_layout]'),
-				contentLayout = form.find('select[name=content_layout]');
+				contentLayout = form.find('select[name=content_layout]'),
+				icon          = form.find( 'input[name=btn_icon]' );
 
 			bgLayout.on('change', this._toggleMobileTab);
 			bgLayout.on('change', this._toggleTextAndCtaTabs);
 			contentLayout.on('change', this._toggleMobileTab);
 			contentLayout.on('change', this._toggleTextAndCtaTabs);
 			contentLayout.trigger('change');
-
-			// Button background color change
-			$( 'input[name=btn_bg_color]' ).on( 'change', this._bgColorChange );
-			this._bgColorChange();
+			this._flipSettings();
+			icon.on( 'change', this._flipSettings );
 		},
-
+		_flipSettings: function() {
+			var form  = $( '.fl-builder-settings' ),
+					icon = form.find( 'input[name=btn_icon]' );
+			if ( -1 !== icon.val().indexOf( 'fad fa') ) {
+				$('#fl-field-btn_duo_color1').show();
+				$('#fl-field-btn_duo_color2').show();
+			} else {
+				$('#fl-field-btn_duo_color1').hide();
+				$('#fl-field-btn_duo_color2').hide();
+			}
+		},
 		submit: function()
 		{
 			var form          = $('.fl-builder-settings'),
@@ -45,11 +69,11 @@
 			}
 
 			if(show) {
-				$('a[href*=fl-builder-settings-tab-style]').show();
+				$('[data-form-id=content_slider_slide] a[href*=fl-builder-settings-tab-style]').show();
 				$('a[href*=fl-builder-settings-tab-cta]').show();
 			}
 			else {
-				$('a[href*=fl-builder-settings-tab-style]').hide();
+				$('[data-form-id=content_slider_slide] a[href*=fl-builder-settings-tab-style]').hide();
 				$('a[href*=fl-builder-settings-tab-cta]').hide();
 			}
 		},
@@ -99,20 +123,6 @@
 				$('#fl-builder-settings-section-r_photo').hide();
 			}
 		},
-
-		_bgColorChange: function()
-		{
-			var bgColor = $( 'input[name=btn_bg_color]' ),
-				style   = $( '#fl-builder-settings-section-btn_style' );
-
-
-			if ( '' == bgColor.val() ) {
-				style.hide();
-			}
-			else {
-				style.show();
-			}
-		}
 	});
 
 })(jQuery);

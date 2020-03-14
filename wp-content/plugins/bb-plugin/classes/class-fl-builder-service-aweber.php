@@ -22,6 +22,8 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 	 */
 	private $api_instance = null;
 
+	private $lists = false;
+
 	/**
 	 * Get an instance of the API.
 	 *
@@ -61,8 +63,8 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 	 */
 	public function connect( $fields = array() ) {
 		$response = array(
-			'error'  => false,
-			'data'   => array(),
+			'error' => false,
+			'data'  => array(),
 		);
 
 		// Make sure we have an authorization code.
@@ -70,8 +72,7 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 			$response['error'] = __( 'Error: You must provide an Authorization Code.', 'fl-builder' );
 		} elseif ( 6 != count( explode( '|', $fields['auth_code'] ) ) ) {
 			$response['error'] = __( 'Error: Please enter a valid Authorization Code.', 'fl-builder' );
-		} // Try to connect and store the connection data.
-		else {
+		} else { // Try to connect and store the connection data.
 
 			$api = $this->get_api( $fields['auth_code'] );
 
@@ -93,9 +94,9 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 			if ( ! $response['error'] ) {
 
 				$response['data'] = array(
-					'auth_code'      => $fields['auth_code'],
-					'access_token'   => $access_token,
-					'access_secret'  => $access_token_secret,
+					'auth_code'     => $fields['auth_code'],
+					'access_token'  => $access_token,
+					'access_secret' => $access_token_secret,
 				);
 			}
 		}
@@ -113,13 +114,14 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 		ob_start();
 
 		FLBuilder::render_settings_field( 'auth_code', array(
-			'row_class'     => 'fl-builder-service-connect-row',
-			'class'         => 'fl-builder-service-connect-input',
-			'type'          => 'text',
-			'label'         => __( 'Authorization Code', 'fl-builder' ),
-			'description'   => sprintf( __( 'Please register this website with AWeber to get your Authorization Code. <a%s>Register Now</a>', 'fl-builder' ), ' href="https://auth.aweber.com/1.0/oauth/authorize_app/baa1f131" target="_blank"' ),
-			'preview'       => array(
-				'type'          => 'none',
+			'row_class'   => 'fl-builder-service-connect-row',
+			'class'       => 'fl-builder-service-connect-input',
+			'type'        => 'text',
+			'label'       => __( 'Authorization Code', 'fl-builder' ),
+			/* translators: %s: register url */
+			'description' => sprintf( __( 'Please register this website with AWeber to get your Authorization Code. <a%s>Register Now</a>', 'fl-builder' ), ' href="https://auth.aweber.com/1.0/oauth/authorize_app/baa1f131" target="_blank"' ),
+			'preview'     => array(
+				'type' => 'none',
 			),
 		));
 
@@ -138,23 +140,51 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 	 * }
 	 */
 	public function render_fields( $account, $settings ) {
-		$account_data   = $this->get_account_data( $account );
-		$api            = $this->get_api( $account_data['auth_code'] );
-		$response       = array(
-			'error'         => false,
-			'html'          => '',
+		$account_data = $this->get_account_data( $account );
+		$api          = $this->get_api( $account_data['auth_code'] );
+		$response     = array(
+			'error' => false,
+			'html'  => '',
 		);
 
 		try {
-			$account          = $api->getAccount( $account_data['access_token'], $account_data['access_secret'] );
-			$lists            = $account->loadFromUrl( '/accounts/' . $account->id . '/lists' );
-			$response['html'] = $this->render_list_field( $lists, $settings );
-			$response['html'] .= $this->render_tags_field( $settings );
+			$account = $api->getAccount( $account_data['access_token'], $account_data['access_secret'] );
+			$this->fetch_lists( $account );
+			if ( is_object( $this->lists ) && is_array( $this->lists->data['entries'] ) ) {
+				$response['html']  = $this->render_list_field( $this->lists, $settings );
+				$response['html'] .= $this->render_tags_field( $settings );
+			} else {
+				$response['error'] = 'Unable to fetch lists';
+			}
 		} catch ( AWeberException $e ) {
 			$response['error'] = $e->getMessage();
 		}
 
 		return $response;
+	}
+
+	private function fetch_lists( $account, $offset = false ) {
+
+		$offset_txt = '';
+		try {
+			if ( $offset ) {
+				$offset_txt = '?ws.start=' . $offset;
+			}
+			$list = $account->loadFromUrl( '/accounts/' . $account->id . '/lists' . $offset_txt );
+		} catch ( AWeberException $e ) {
+			return false;
+		}
+
+		if ( ! $this->lists ) {
+			$this->lists = $list;
+		} else {
+			$this->lists->data['entries'] = array_merge( $this->lists->data['entries'], $list->data['entries'] );
+		}
+
+		if ( count( $list->data['entries'] ) === 100 ) {
+			$offset = count( $this->lists->data['entries'] ) + 1;
+			$this->fetch_lists( $account, $offset );
+		}
 	}
 
 	/**
@@ -174,17 +204,17 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 		);
 
 		foreach ( $lists->data['entries'] as $list ) {
-			$options[ $list['id'] ] = $list['name'];
+			$options[ $list['id'] ] = esc_attr( $list['name'] );
 		}
 
 		FLBuilder::render_settings_field( 'list_id', array(
-			'row_class'     => 'fl-builder-service-field-row',
-			'class'         => 'fl-builder-service-list-select',
-			'type'          => 'select',
-			'label'         => _x( 'List', 'An email list from a third party provider.', 'fl-builder' ),
-			'options'       => $options,
-			'preview'       => array(
-				'type'          => 'none',
+			'row_class' => 'fl-builder-service-field-row',
+			'class'     => 'fl-builder-service-list-select',
+			'type'      => 'select',
+			'label'     => _x( 'List', 'An email list from a third party provider.', 'fl-builder' ),
+			'options'   => $options,
+			'preview'   => array(
+				'type' => 'none',
 			),
 		), $settings);
 
@@ -203,15 +233,15 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 		ob_start();
 
 		FLBuilder::render_settings_field( 'tags', array(
-			'row_class'     => 'fl-builder-service-connect-row',
-			'class'         => 'fl-builder-service-connect-input',
-			'type'          => 'text',
-			'label'         => _x( 'Tags', 'A comma separated list of tags.', 'fl-builder' ),
-			'help'          => __( 'A comma separated list of tags.', 'fl-builder' ),
-			'preview'       => array(
-				'type'          => 'none',
+			'row_class' => 'fl-builder-service-connect-row',
+			'class'     => 'fl-builder-service-connect-input',
+			'type'      => 'text',
+			'label'     => _x( 'Tags', 'A comma separated list of tags.', 'fl-builder' ),
+			'help'      => __( 'A comma separated list of tags.', 'fl-builder' ),
+			'preview'   => array(
+				'type' => 'none',
 			),
-		),$settings);
+		), $settings);
 
 		return ob_get_clean();
 	}
@@ -237,8 +267,8 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 			$response['error'] = __( 'There was an error subscribing to AWeber. The account is no longer connected.', 'fl-builder' );
 		} else {
 
-			$api    = $this->get_api( $account_data['auth_code'] );
-			$data   = array(
+			$api  = $this->get_api( $account_data['auth_code'] );
+			$data = array(
 				'email' => $email,
 			);
 
@@ -273,7 +303,7 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 					}
 
 					try {
-						$result  = $api->adapter->request( 'PATCH', $url . '/' . $subscriber_id, $data, array(
+						$result = $api->adapter->request( 'PATCH', $url . '/' . $subscriber_id, $data, array(
 							'return' => 'headers',
 						) );
 
@@ -284,13 +314,14 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 						}
 					} catch ( AWeberAPIException $e ) {
 						$response['error'] = sprintf(
+							/* translators: %s: error */
 							__( 'There was an error subscribing to AWeber. %s', 'fl-builder' ),
 							$e->getMessage()
 						);
 					}
 				} else {
 					$data['ws.op'] = 'create';
-					$result  = $api->adapter->request( 'POST', $url, $data, array(
+					$result        = $api->adapter->request( 'POST', $url, $data, array(
 						'return' => 'headers',
 					) );
 
@@ -302,6 +333,7 @@ final class FLBuilderServiceAWeber extends FLBuilderService {
 				}
 			} catch ( AWeberAPIException $e ) {
 				$response['error'] = sprintf(
+					/* translators: %s: error */
 					__( 'There was an error subscribing to AWeber. %s', 'fl-builder' ),
 					$e->getMessage()
 				);

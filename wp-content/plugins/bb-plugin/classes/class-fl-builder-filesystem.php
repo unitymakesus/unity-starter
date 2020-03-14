@@ -9,7 +9,11 @@ class FL_Filesystem {
 
 	public static function instance() {
 		if ( is_null( self::$_instance ) ) {
-			$filtered = apply_filters( 'fl_filesystem_instance', null );
+			/**
+			 * Make Filesystem Instance filterable.
+			 * @see fl_filesystem_instance
+			 */
+			$filtered        = apply_filters( 'fl_filesystem_instance', null );
 			self::$_instance = $filtered instanceof FL_Filesystem ? $filtered : new self();
 		}
 		return self::$_instance;
@@ -133,16 +137,20 @@ class FL_Filesystem {
 		if ( ! $wp_filesystem || 'direct' != $wp_filesystem->method ) {
 			require_once ABSPATH . '/wp-admin/includes/file.php';
 
+			/**
+			 * Context for filesystem, default false.
+			 * @see request_filesystem_credentials_context
+			 */
 			$context = apply_filters( 'request_filesystem_credentials_context', false );
 
-			add_filter( 'filesystem_method',              array( $this, 'filesystem_method' ) );
+			add_filter( 'filesystem_method', array( $this, 'filesystem_method' ) );
 			add_filter( 'request_filesystem_credentials', array( $this, 'request_filesystem_credentials' ) );
 
 			$creds = request_filesystem_credentials( site_url(), '', true, $context, null );
 
 			WP_Filesystem( $creds, $context );
 
-			remove_filter( 'filesystem_method',              array( $this, 'filesystem_method' ) );
+			remove_filter( 'filesystem_method', array( $this, 'filesystem_method' ) );
 			remove_filter( 'request_filesystem_credentials', array( $this, 'FLBuilderUtils::request_filesystem_credentials' ) );
 		}
 

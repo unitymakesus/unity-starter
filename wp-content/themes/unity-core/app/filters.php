@@ -212,3 +212,30 @@ if ( ! is_admin() ) { // Don't touch anything inside of the WordPress Dashboard,
     return $title;
   }, 10, 2 );
 }
+
+/**
+ * Prevent certain pages loading WP External Link plugin
+ */
+add_action( 'wpel_apply_settings', function () {
+
+  // Exclude Beaver Builder editor pages
+  if (isset($_GET['fl_builder'])) {
+    return false;
+  }
+
+  // Exclude directory pages that use FacetWP
+  if (is_page_template('templates/page-directory.php') || is_page('directory-map') || is_singular('rtp-facility')) {
+    return false;
+}
+
+  return true;
+}, 10 );
+
+/**
+ * Add class to navigation links so WP External Links plugin can ignore them
+ */
+add_filter('nav_menu_link_attributes', function($atts, $item, $args) {
+  $atts['class'] = 'menu-link';
+
+  return $atts;
+}, 10, 3);

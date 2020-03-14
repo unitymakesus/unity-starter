@@ -1,7 +1,10 @@
-// Web Font Loader
-var WebFont = require('webfontloader');
+import WebFont from 'webfontloader';
 
-var fontFamilies = ['Bitter:700', 'Source Sans Pro:400,400i,700,700i', 'Material Icons'];
+const fontFamilies = [
+  // 'Chivo:400,400i,700',
+  'Chivo:ital,wght@0,400;0,700;1,400;1,700&',
+  'Material Icons'
+];
 
 WebFont.load({
  google: {

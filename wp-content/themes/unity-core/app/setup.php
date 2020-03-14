@@ -8,41 +8,36 @@ use Roots\Sage\Template\Blade;
 use Roots\Sage\Template\BladeProvider;
 
 /**
- * Theme assets
- */
-add_action('wp_enqueue_scripts', function () {
-    wp_enqueue_style('sage/main.css', asset_path('styles/main.css'), false, null);
-    wp_enqueue_script('sage/main.js', asset_path('scripts/main.js'), ['jquery'], null, true);
-
-    if (is_single() && comments_open() && get_option('thread_comments')) {
-        wp_enqueue_script('comment-reply');
-    }
-
-    // Set array of theme customizations for JS
-    wp_localize_script( 'sage/main.js', 'simple_options', array('fonts' => get_theme_mod('theme_fonts'), 'colors' => get_theme_mod('theme_color')) );
-}, 100);
-
-/**
  * Theme setup
  */
 add_action('after_setup_theme', function () {
     /**
-     * Enable features from Soil when plugin is activated
+     * Clean up header code (Soil)
      * @link https://roots.io/plugins/soil/
      */
-    add_theme_support('soil-clean-up');
-    add_theme_support('soil-jquery-cdn');
-    add_theme_support('soil-nav-walker');
-    add_theme_support('soil-nice-search');
-    // add_theme_support('soil-relative-urls');
-
-    /**
-     * REMOVE WP EMOJI
-     */
+     add_action('wp_head', 'ob_start', 1, 0);
+     add_action('wp_head', function () {
+       $pattern = '/.*' . preg_quote(esc_url(get_feed_link('comments_' . get_default_feed())), '/') . '.*[\r\n]+/';
+       echo preg_replace($pattern, '', ob_get_clean());
+     }, 3, 0);
+     remove_action('wp_head', 'rsd_link');
+     remove_action('wp_head', 'wlwmanifest_link');
+     remove_action('wp_head', 'adjacent_posts_rel_link_wp_head', 10);
+     remove_action('wp_head', 'wp_generator');
+     remove_action('wp_head', 'wp_shortlink_wp_head', 10);
      remove_action('wp_head', 'print_emoji_detection_script', 7);
+     remove_action('admin_print_scripts', 'print_emoji_detection_script');
      remove_action('wp_print_styles', 'print_emoji_styles');
-     remove_action( 'admin_print_scripts', 'print_emoji_detection_script' );
-     remove_action( 'admin_print_styles', 'print_emoji_styles' );
+     remove_action('admin_print_styles', 'print_emoji_styles');
+     remove_action('wp_head', 'wp_oembed_add_discovery_links');
+     remove_action('wp_head', 'wp_oembed_add_host_js');
+     remove_action('wp_head', 'rest_output_link_wp_head', 10);
+     remove_filter('the_content_feed', 'wp_staticize_emoji');
+     remove_filter('comment_text_rss', 'wp_staticize_emoji');
+     remove_filter('wp_mail', 'wp_staticize_emoji_for_email');
+     add_filter('use_default_gallery_style', '__return_false');
+     add_filter('emoji_svg_url', '__return_false');
+     add_filter('show_recent_comments_widget_style', '__return_false');
 
     /**
      * Enable plugins to manage the document title
@@ -56,7 +51,7 @@ add_action('after_setup_theme', function () {
      */
     register_nav_menus([
         'primary_navigation' => __('Primary Navigation', 'sage'),
-        'social_links' => __('Social Links', 'sage')
+        'social_links' => __('Social Links', 'sage'),
     ]);
 
     /**
@@ -81,7 +76,7 @@ add_action('after_setup_theme', function () {
      * Use main stylesheet for visual editor
      * @see resources/assets/styles/layouts/_tinymce.scss
      */
-    add_editor_style(asset_path('styles/main.css'));
+    // add_editor_style(asset_path('styles/main.css'));
 
     /**
     * Add support for Gutenberg.
@@ -95,9 +90,9 @@ add_action('after_setup_theme', function () {
     /**
      * Enqueue editor styles for Gutenberg
      */
-    function simple_editor_styles() {
-      wp_enqueue_style( 'simple-gutenberg-style', asset_path('styles/main.css') );
-    }
+    // function simple_editor_styles() {
+    //   wp_enqueue_style( 'simple-gutenberg-style', asset_path('styles/main.css') );
+    // }
     // add_action( 'enqueue_block_editor_assets', __NAMESPACE__ . '\\simple_editor_styles' );
 
     /**
@@ -115,16 +110,17 @@ add_action('after_setup_theme', function () {
     ));
 
     /**
-     * Add image sizes
+     * Set image sizes
      */
-    add_image_size('tiny-thumbnail', 80, 80, true);
-    add_image_size('small-thumbnail', 150, 150, true);
+    update_option( 'thumbnail_size_w', 300 );
+    update_option( 'thumbnail_size_h', 300 );
+    update_option( 'thumbnail_crop', 1 );
+    update_option( 'medium_size_w', 600 );
+    update_option( 'medium_size_h', 600 );
     add_image_size('medium-square-thumbnail', 400, 400, true);
 
     add_filter( 'image_size_names_choose', function( $sizes ) {
       return array_merge( $sizes, array(
-        'tiny-thumbnail' => __( 'Tiny Thumbnail' ),
-        'small-thumbnail' => __( 'Small Thumbnail' ),
         'medium-square-thumbnail' => __( 'Medium Square Thumbnail' ),
       ) );
     } );
@@ -141,6 +137,14 @@ add_action('widgets_init', function () {
         'before_title'  => '<h3>',
         'after_title'   => '</h3>'
     ];
+    register_sidebar([
+      'name'          => __('Footer-Utility-Left', 'sage'),
+      'id'            => 'footer-utility-left'
+    ] + $config);
+    register_sidebar([
+      'name'          => __('Footer-Utility-Right', 'sage'),
+      'id'            => 'footer-utility-right'
+    ] + $config);
     register_sidebar([
         'name'          => __('Primary', 'sage'),
         'id'            => 'sidebar-primary'

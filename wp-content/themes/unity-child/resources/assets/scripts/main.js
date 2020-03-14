@@ -1,7 +1,11 @@
-// Import parent JS
-import '../../../../unity-core/dist/scripts/main.js';
+// import external dependencies
+import 'jquery';
+// import 'materialize-css';
 
-/** Import local dependencies */
+// Import everything from autoload
+import './autoload/*';
+
+// import local dependencies
 // import Router from './util/Router';
 // import common from './routes/common';
 // import home from './routes/home';

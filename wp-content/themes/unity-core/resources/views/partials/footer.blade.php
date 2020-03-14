@@ -17,10 +17,10 @@
 
   <div class="footer-copyright row flex space-between">
     <div class="footer-left col m6 s12">
-      <p class="copyright">&copy; {!! current_time('Y') !!} {{ get_bloginfo('name', 'display') }}</p>
+      @php dynamic_sidebar('footer-utility-left') @endphp
     </div>
     <div class="footer-right col m6 s12">
-      <a href="{{ get_home_url() }}/privacy-policy/">Privacy Policy</a>
+      @php dynamic_sidebar('footer-utility-right') @endphp
     </div>
   </div>
 

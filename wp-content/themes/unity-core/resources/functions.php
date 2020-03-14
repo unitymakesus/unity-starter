@@ -48,14 +48,6 @@ if (!class_exists('Roots\\Sage\\Container')) {
 }
 
 /**
- * Setting up  customizer controls
- */
- define( 'O2_DIRECTORY', get_template_directory() . '/../app/o2/' );
- define( 'O2_DIRECTORY_URI', get_template_directory_uri() . '/../app/o2/' );
- require O2_DIRECTORY . 'controls/color-palette/color-palette-control.php';
- require O2_DIRECTORY . 'controls/range-slider/range-slider-control.php';
-
-/**
  * Sage required files
  *
  * The mapped array determines the code library included in your theme.
@@ -66,7 +58,7 @@ array_map(function ($file) use ($sage_error) {
     if (!locate_template($file, true, true)) {
         $sage_error(sprintf(__('Error locating <code>%s</code> for inclusion.', 'sage'), $file), 'File not found');
     }
-}, ['helpers', 'setup', 'filters', 'breadcrumbs', 'custom_post_type', 'shortcode', 'admin']);
+}, ['helpers', 'setup', 'filters', 'breadcrumbs', 'custom_post_type', 'shortcode', 'admin', 'nav', 'forms']);
 
 /**
  * Here's what's happening with these hooks:

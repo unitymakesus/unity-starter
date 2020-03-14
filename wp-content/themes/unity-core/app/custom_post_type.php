@@ -2,6 +2,7 @@
 
 namespace App;
 
+// Team Post Type
 function create_post_type() {
   $argsTeam = array(
     'labels' => array(

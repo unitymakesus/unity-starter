@@ -1,0 +1,65 @@
+/** Colors */
+// Neutrals
+$color-black      : #000;
+$color-grey-dark  : #66666E;
+$color-grey-medium: #9999A1;
+$color-grey-light : #C5C5CC;
+$color-white      : #FFF;
+
+// Utilities
+$color-blue : #007EA7;
+$color-red  : #A3320B;
+$color-green: #4A8354;
+
+$primary-color  : $color-black;
+$secondary-color: $color-grey-dark;
+$success-color  : $color-green;
+$error-color    : $color-red;
+$link-color     : $color-blue;
+
+/** Typography */
+$em-base     : 18px;
+$rem-base    : 18px;
+$primary-font: 'Chivo', sans-serif;
+
+/** Buttons */
+// Shared styles
+$button-background-focus: lighten($primary-color, 10%);
+$button-font-size       : 1.2rem;
+$button-height          : 50px;
+$button-padding         : 0 1rem;
+$button-radius          : 0;
+
+/** Navigation */
+$navbar-height       : auto;
+$navbar-height-mobile: auto;
+
+/** Footer */
+$footer-font-color          : $color-white;
+$footer-copyright-font-color: $color-white;
+
+/** Box Model  */
+$spacer: 2rem;
+
+/** Grid */
+$gutter-width: 20px;
+
+/** Modified Breakpoints */
+$xsmall-screen   : 600px;
+$xsmall-screen-up: 601px;
+$small-screen-up : 769px;
+$medium-screen-up: 993px;
+$large-screen-up : 1201px;
+$small-screen    : 768px;
+$medium-screen   : 992px;
+$large-screen    : 1200px;
+$small-and-up    : "only screen and (min-width : #{$xsmall-screen-up})";
+$xsmall-and-down : "only screen and (max-width : #{$xsmall-screen})";
+
+/** Flow Text  */
+$range        : $large-screen - $medium-screen;
+$intervals    : 18;
+$interval-size: $range / $intervals;
+
+/** Assets */
+$asset-base-path: '../images' !default;

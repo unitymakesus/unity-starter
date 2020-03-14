@@ -77,7 +77,6 @@
   },
   "dependencies": {
     "jquery": "^3.3.1",
-    "macy": "^2.3.1",
     "materialize-css": "^1.0.0",
     "webfontloader": "^1.6.28"
   }

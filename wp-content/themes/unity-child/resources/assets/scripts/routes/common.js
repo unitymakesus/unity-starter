@@ -1,8 +1,18 @@
+import initMainMenu from '../util/initMainMenu';
+import gfLabelSwap from '../util/gfLabelSwap';
+import a11yToolbar from '../util/a11yToolbar';
+
 export default {
   init() {
-    // JavaScript to be fired on all pages
+    initMainMenu();
+    a11yToolbar();
   },
   finalize() {
-    // JavaScript to be fired on all pages, after the init JS
+    // Gravity Forms label controls
+    gfLabelSwap();
+
+    // Form select controls
+    $('.gfield select').formSelect();
+    $('.acf-field select').formSelect();
   },
 };

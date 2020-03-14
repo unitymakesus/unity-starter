@@ -103,10 +103,10 @@ add_action('after_setup_theme', function () {
     /**
      * Enable logo uploader in customizer
      */
-    add_image_size('simple-logo', 200, 200, false);
-    add_image_size('simple-logo-2x', 400, 400, false);
+    add_image_size('logo', 200, 200, false);
+    add_image_size('logo-2x', 400, 400, false);
     add_theme_support('custom-logo', array(
-      'size' => 'simple-logo-2x'
+      'size' => 'logo-2x'
     ));
 
     /**

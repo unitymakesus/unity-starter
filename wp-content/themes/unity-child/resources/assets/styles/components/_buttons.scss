@@ -35,12 +35,12 @@ input[type="submit"] {
 .btn-menu-toggle {
   padding: 0.6rem 0.75rem;
   color: black;
-  border-color: rgba(0, 0, 0, 0.75);
+  border-color: rgba($color-black, 0.75);
 }
 
 .btn-topnav-toggle {
   padding: 0.6rem 0.75rem;
   margin: 6px 0.5rem 6px 0;
   color: $color-white;
-  border-color: rgba(255, 255, 255, 0.75);
+  border-color: rgba($color-white, 0.75);
 }

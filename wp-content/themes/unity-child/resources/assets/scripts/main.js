@@ -1,5 +1,6 @@
 // import external dependencies
 import 'jquery';
+import 'custom-event-polyfill';
 // import 'materialize-css';
 
 // Import everything from autoload

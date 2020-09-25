@@ -1,4 +1,4 @@
-<article class="container" {!! post_class() !!}>
+<article {!! post_class('container') !!}>
   <header>
     <h1 class="entry-title">{!! get_the_title() !!}</h1>
     @include('partials/entry-meta')

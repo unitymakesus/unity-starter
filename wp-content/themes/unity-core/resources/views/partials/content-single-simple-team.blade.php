@@ -1,4 +1,4 @@
-<article class="container" {!! post_class() !!}>
+<article {!! post_class('container') !!}>
   <div class="row person">
     <div class="col m4 s6 xs12">
       <?php echo get_the_post_thumbnail($post_id, 'medium-square-thumbnail'); ?>

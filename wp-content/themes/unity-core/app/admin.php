@@ -3,19 +3,28 @@
 namespace App;
 
 /**
-* Theme customizer
-*/
-add_action('customize_register', function (\WP_Customize_Manager $wp_customize) {
-
+ * Clean up the dashboard.
+ *
+ * @return void
+ */
+add_action('wp_dashboard_setup', function () {
+    remove_meta_box('dashboard_site_health', 'dashboard', 'normal');
 });
 
 /**
-* Customizer JS
-*/
-add_action('customize_preview_init', function () {
-  // wp_enqueue_script('sage/customizer.js', asset_path('scripts/customizer.js'), ['customize-preview'], null, true);
-});
+ * Disable auto-updates for plugins and themes.
+ *
+ * @since 5.5
+ */
+add_filter('plugins_auto_update_enabled', '__return_false');
+add_filter('themes_auto_update_enabled', '__return_false');
 
-add_action('customize_controls_enqueue_scripts', function () {
-  // wp_enqueue_script('sage/customizer-panel.js', asset_path('scripts/customizer-panel.js'), [], null, true);
+/**
+ * Disable WP update notice(s) if ManageWP is active.
+ */
+add_action('admin_head', function () {
+    if (is_plugin_active('worker/init.php')) {
+        remove_action('admin_notices', 'update_nag', 3);
+        remove_action('network_admin_notices', 'update_nag', 3);
+    }
 });
